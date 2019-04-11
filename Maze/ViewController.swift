@@ -7,8 +7,14 @@
 //
 
 import UIKit
+import CoreMotion
 
 class ViewController: UIViewController {
+    
+    var playerView: UIView!
+    var playerMotionManager: CMMotionManager!
+    var speedX: Double = 0.0
+    var speedY: Double = 0.0
     
     let screenSize = UIScreen.main.bounds.size
 
@@ -56,6 +62,16 @@ class ViewController: UIViewController {
                 }
             }
         }
+        
+        playerView = UIView(frame: CGRect(x: 0, y: 0, width: cellWidth / 6, height: cellHeight / 6))
+        playerView.center = startView.center
+        playerView.backgroundColor = UIColor.gray
+        self.view.addSubview(playerView)
+        
+        playerMotionManager = CMMotionManager()
+        playerMotionManager.accelerometerUpdateInterval = 0.02
+        
+        self.startAccelerometer()
     }
     
     func createView(x: Int, y: Int, width: CGFloat, height: CGFloat, offsetX: CGFloat, offsetY: CGFloat) -> UIView {
@@ -67,6 +83,37 @@ class ViewController: UIViewController {
         view.center = center
         
         return view
+    }
+    
+    func startAccelerometer() {
+        let handler: CMAccelerometerHandler = {(CMAccelerometerData: CMAccelerometerData?, error: Error?) ->
+            Void in
+            self.speedX += CMAccelerometerData!.acceleration.x
+            self.speedY += CMAccelerometerData!.acceleration.y
+            
+            var posX = self.playerView.center.x + (CGFloat(self.speedX) / 3)
+            var posY = self.playerView.center.y - (CGFloat(self.speedY) / 3)
+            
+            if posX <= self.playerView.frame.width / 2 {
+                self.speedX = 0
+                posX = self.playerView.frame.width / 2
+            }
+            if posY <= self.playerView.frame.height / 2 {
+                self.speedY = 0
+                posY = self.playerView.frame.height / 2
+            }
+            if posX >= self.screenSize.width - (self.playerView.frame.width / 2) {
+                self.speedX = 0
+                posX = self.screenSize.width - (self.playerView.frame.width / 2)
+            }
+            if posY >= self.screenSize.height - (self.playerView.frame.height / 2) {
+                self.speedY = 0
+                posX = self.screenSize.height - (self.playerView.frame.height / 2)
+            }
+            
+            self.playerView.center = CGPoint(x: posX, y: posY)
+        }
+        playerMotionManager.startAccelerometerUpdates(to: OperationQueue.main, withHandler: handler)
     }
 
 }
